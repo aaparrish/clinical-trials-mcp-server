@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clinical Finder - Real-Time Clinical Trial Search MCP Server</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #2c3e50;
+            background: #f8f9fa;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Header */
+        header {
+            background: linear-gradient(135deg, #2c5aa0 0%, #1e3a8a 100%);
+            color: white;
+            padding: 80px 0;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            margin-bottom: 20px;
+            font-weight: 700;
+        }
+
+        .tagline {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            font-size: 1.3rem;
+            opacity: 0.95;
+            margin-bottom: 15px;
+        }
+
+        .highlight-box {
+            background: rgba(255, 255, 255, 0.15);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            padding: 20px;
+            margin: 30px auto;
+            max-width: 800px;
+            font-size: 1.1rem;
+        }
+
+        .highlight-box strong {
+            color: #fbbf24;
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 30px;
+        }
+
+        .btn {
+            padding: 15px 35px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: white;
+            color: #2c5aa0;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: white;
+            border: 2px solid white;
+        }
+
+        .btn-secondary:hover {
+            background: white;
+            color: #2c5aa0;
+        }
+
+        /* Comparison Section */
+        .comparison {
+            padding: 80px 0;
+            background: #fff3cd;
+            border-top: 4px solid #fbbf24;
+            border-bottom: 4px solid #fbbf24;
+        }
+
+        .comparison h2 {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            color: #1e3a8a;
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 40px;
+            margin-top: 40px;
+        }
+
+        .comparison-card {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+
+        .comparison-card h3 {
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+            color: #1e3a8a;
+        }
+
+        .comparison-card.better {
+            border: 3px solid #10b981;
+            position: relative;
+        }
+
+        .comparison-card.better::before {
+            content: "✓ Clinical Finder";
+            position: absolute;
+            top: -15px;
+            left: 20px;
+            background: #10b981;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .comparison-card.worse {
+            border: 3px solid #ef4444;
+            opacity: 0.85;
+        }
+
+        .comparison-list {
+            list-style: none;
+            margin-top: 20px;
+        }
+
+        .comparison-list li {
+            padding: 12px 0;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            align-items: start;
+        }
+
+        .comparison-list li:last-child {
+            border-bottom: none;
+        }
+
+        .check-icon {
+            color: #10b981;
+            margin-right: 12px;
+            font-weight: bold;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+
+        .x-icon {
+            color: #ef4444;
+            margin-right: 12px;
+            font-weight: bold;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+
+        /* Query Examples */
+        .query-examples {
+            padding: 80px 0;
+            background: white;
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            color: #1e3a8a;
+        }
+
+        .section-subtitle {
+            text-align: center;
+            font-size: 1.2rem;
+            color: #64748b;
+            margin-bottom: 60px;
+        }
+
+        .example-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+            gap: 40px;
+            margin-top: 40px;
+        }
+
+        .example-box {
+            background: #f8f9fa;
+            border-left: 4px solid #2c5aa0;
+            padding: 30px;
+            border-radius: 8px;
+        }
+
+        .example-box h3 {
+            color: #1e3a8a;
+            margin-bottom: 15px;
+            font-size: 1.4rem;
+        }
+
+        .example-box .query {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            margin: 15px 0;
+            color: #2c5aa0;
+            line-height: 1.8;
+            font-size: 0.95rem;
+        }
+
+        .example-box p {
+            color: #64748b;
+            margin-top: 15px;
+        }
+
+        /* Features Section */
+        .features {
+            padding: 80px 0;
+            background: #f8f9fa;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 40px;
+            margin-top: 40px;
+        }
+
+        .feature-card {
+            padding: 30px;
+            background: white;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            border-color: #2c5aa0;
+            box-shadow: 0 10px 30px rgba(44, 90, 160, 0.1);
+        }
+
+        .feature-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            color: #1e3a8a;
+        }
+
+        .feature-card p {
+            color: #64748b;
+            line-height: 1.8;
+        }
+
+        /* Coming Soon */
+        .coming-soon {
+            padding: 80px 0;
+            background: white;
+        }
+
+        .coming-soon-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+
+        .coming-soon-card {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 8px;
+            border-left: 4px solid #fbbf24;
+        }
+
+        .coming-soon-card h4 {
+            color: #1e3a8a;
+            margin-bottom: 10px;
+            font-size: 1.2rem;
+        }
+
+        .coming-soon-card p {
+            color: #64748b;
+            font-size: 0.95rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: #fbbf24;
+            color: #1e3a8a;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        /* How It Works */
+        .how-it-works {
+            padding: 80px 0;
+            background: #f8f9fa;
+        }
+
+        .steps {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+
+        .step {
+            text-align: center;
+            padding: 30px;
+            background: white;
+            border-radius: 12px;
+        }
+
+        .step-number {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #2c5aa0 0%, #1e3a8a 100%);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin: 0 auto 20px;
+        }
+
+        .step h3 {
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+            color: #1e3a8a;
+        }
+
+        /* Installation */
+        .installation {
+            padding: 80px 0;
+            background: white;
+        }
+
+        .code-block {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 30px;
+            border-radius: 12px;
+            overflow-x: auto;
+            margin: 30px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.95rem;
+            line-height: 1.8;
+        }
+
+        /* Footer */
+        footer {
+            background: #1e293b;
+            color: white;
+            padding: 40px 0;
+            text-align: center;
+        }
+
+        footer a {
+            color: #60a5fa;
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.2rem;
+            }
+
+            .subtitle, .tagline {
+                font-size: 1rem;
+            }
+
+            .cta-buttons {
+                flex-direction: column;
+            }
+
+            .features-grid, .steps, .comparison-grid, .example-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="container">
+            <h1>Clinical Finder</h1>
+            <p class="tagline">A Clinical Trial MCP Server for Claude Desktop</p>
+            <p class="subtitle">Real-time clinical trial search powered by direct ClinicalTrials.gov API integration</p>
+            <div class="highlight-box">
+                <strong>Unlike standard AI tools,</strong> Clinical Finder provides live, up-to-date information on actively recruiting trials - not outdated training data from years ago. Get real enrollment statuses, current contact information, and accurate eligibility criteria.
+            </div>
+            <div class="cta-buttons">
+                <a href="https://github.com/aaparrish/clinical-trials-mcp-server" class="btn btn-primary" target="_blank">View on GitHub</a>
+                <a href="#installation" class="btn btn-secondary">Get Started</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Comparison Section -->
+    <section class="comparison">
+        <div class="container">
+            <h2>Why Clinical Finder Beats Standard AI Tools</h2>
+            
+            <div class="comparison-grid">
+                <div class="comparison-card better">
+                    <h3>Clinical Finder</h3>
+                    <ul class="comparison-list">
+                        <li><span class="check-icon">✓</span> <strong>Real-time data directly from ClinicalTrials.gov API v2</strong></li>
+                        <li><span class="check-icon">✓</span> <strong>Currently recruiting trials updated daily by trial sponsors</strong></li>
+                        <li><span class="check-icon">✓</span> <strong>Live enrollment status showing which trials are actively accepting patients right now</strong></li>
+                        <li><span class="check-icon">✓</span> <strong>Complete contact information for trial coordinators</strong></li>
+                        <li><span class="check-icon">✓</span> <strong>Detailed eligibility criteria for precise matching</strong></li>
+                        <li><span class="check-icon">✓</span> <strong>400,000+ trials searchable with advanced filters</strong></li>
+                    </ul>
+                </div>
+
+                <div class="comparison-card worse">
+                    <h3>Standard AI Tools</h3>
+                    <ul class="comparison-list">
+                        <li><span class="x-icon">✗</span> <strong>Outdated training data from months or years ago</strong></li>
+                        <li><span class="x-icon">✗</span> <strong>No way to know if trials are still recruiting or have closed</strong></li>
+                        <li><span class="x-icon">✗</span> <strong>Stale contact information that may no longer be valid</strong></li>
+                        <li><span class="x-icon">✗</span> <strong>Cannot verify current eligibility requirements</strong></li>
+                        <li><span class="x-icon">✗</span> <strong>May suggest trials that ended years ago</strong></li>
+                        <li><span class="x-icon">✗</span> <strong>Limited to training cutoff date and misses all new trials</strong></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Query Examples -->
+    <section class="query-examples">
+        <div class="container">
+            <h2 class="section-title">Simple Queries or Complex - Clinical Finder Handles Both</h2>
+            <p class="section-subtitle">From basic questions to detailed medical scenarios</p>
+            
+            <div class="example-grid">
+                <div class="example-box">
+                    <h3>Simple Query</h3>
+                    <div class="query">"Find diabetes trials"</div>
+                    <p><strong>Clinical Finder prompts you for:</strong></p>
+                    <ul style="margin: 10px 0 0 20px; color: #64748b;">
+                        <li>Specific diabetes type (Type 1, Type 2, gestational)</li>
+                        <li>Location preference</li>
+                        <li>Patient age</li>
+                    </ul>
+                    <p style="margin-top: 15px;">Perfect for quick searches where you want guidance on what details matter.</p>
+                </div>
+
+                <div class="example-box">
+                    <h3>Advanced Query</h3>
+                    <div class="query">Condition: Metastatic non-small cell lung cancer (NSCLC), adenocarcinoma<br><br>
+Age/Sex: 68, Male<br><br>
+Location: Seattle, WA (willing to travel ~2 hours)<br><br>
+Progression: After 1st-line osimertinib; EGFR T790M negative, MET amplification detected<br><br>
+Medical: COPD (moderate), on apixaban for AFib, prior platinum doublet chemo, AST 1.5x ULN, no brain mets<br><br>
+Biomarkers: EGFR exon 19 del, MET amplification, PD-L1 5%<br><br>
+Constraints: Must allow prior EGFR-TKI/chemo, accept MET+ patients</div>
+                    <p><strong>Clinical Finder understands and processes</strong> complex medical scenarios with multiple biomarkers, treatment history, and specific constraints - returning only trials that match the complete clinical picture.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features -->
+    <section class="features">
+        <div class="container">
+            <h2 class="section-title">Current Features</h2>
+            <p class="section-subtitle">Powerful search capabilities available now</p>
+            
+            <div class="features-grid">
+                <div class="feature-card">
+                    <h3>Intelligent Prompting</h3>
+                    <p>Claude asks for specific condition types, location, and age to find the most relevant trials for your needs.</p>
+                </div>
+
+                <div class="feature-card">
+                    <h3>Comprehensive Search</h3>
+                    <p>Access 400,000+ clinical trials with advanced filtering by phase, status, location, and intervention type.</p>
+                </div>
+
+                <div class="feature-card">
+                    <h3>Detailed Information</h3>
+                    <p>Get complete trial details including eligibility criteria, contact information, study design, and current enrollment status.</p>
+                </div>
+
+                <div class="feature-card">
+                    <h3>Global Coverage</h3>
+                    <p>Search trials worldwide or focus on specific locations - from individual cities to entire countries.</p>
+                </div>
+
+                <div class="feature-card">
+                    <h3>Real-time Updates</h3>
+                    <p>Direct API integration ensures you always get the most current trial information, updated daily by sponsors.</p>
+                </div>
+
+                <div class="feature-card">
+                    <h3>Natural Conversation</h3>
+                    <p>No complex forms or queries - just ask Claude naturally and get intelligent, contextual responses.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Coming Soon -->
+    <section class="coming-soon">
+        <div class="container">
+            <h2 class="section-title">Coming Soon</h2>
+            <p class="section-subtitle">Exciting features in development</p>
+
+            <div style="text-align: center; margin-bottom: 40px;">
+                <div style="display: inline-block; background: #e0f2fe; padding: 20px 40px; border-radius: 12px; border: 2px solid #2c5aa0;">
+                    <h3 style="color: #1e3a8a; margin-bottom: 10px; font-size: 1.5rem;">Integrated Web Interface</h3>
+                    <p style="color: #64748b; font-size: 1.1rem;">A standalone website for searching trials without Claude Desktop - perfect for non-technical users and broader accessibility</p>
+                </div>
+            </div>
+            
+            <div class="coming-soon-grid">
+                <div class="coming-soon-card">
+                    <span class="badge">Enhancement</span>
+                    <h4>Save Favorite Trials</h4>
+                    <p>Bookmark interesting trials and access them later for easy comparison and tracking.</p>
+                </div>
+
+                <div class="coming-soon-card">
+                    <span class="badge">Enhancement</span>
+                    <h4>Trial Monitoring</h4>
+                    <p>Watch specific trials for status changes and get notified when new trials match your criteria.</p>
+                </div>
+
+                <div class="coming-soon-card">
+                    <span class="badge">Enhancement</span>
+                    <h4>Export Functionality</h4>
+                    <p>Export search results to CSV, generate PDF reports, and create formatted summaries.</p>
+                </div>
+
+                <div class="coming-soon-card">
+                    <span class="badge">Advanced</span>
+                    <h4>Eligibility Checker</h4>
+                    <p>Automated tool to determine if someone qualifies for a specific trial based on their medical profile.</p>
+                </div>
+
+                <div class="coming-soon-card">
+                    <span class="badge">Advanced</span>
+                    <h4>Geographic Visualization</h4>
+                    <p>Map trial locations, find trials within specific distances, and visualize trial density by region.</p>
+                </div>
+
+                <div class="coming-soon-card">
+                    <span class="badge">Advanced</span>
+                    <h4>AI Summarization</h4>
+                    <p>Summarize complex eligibility criteria in plain English and extract key inclusion/exclusion requirements.</p>
+                </div>
+
+                <div class="coming-soon-card">
+                    <span class="badge">Integration</span>
+                    <h4>PubMed Integration</h4>
+                    <p>Connect to related research, publications, and scientific literature for comprehensive context.</p>
+                </div>
+
+                <div class="coming-soon-card">
+                    <span class="badge">Integration</span>
+                    <h4>FDA Drug Information</h4>
+                    <p>Access FDA data about investigational drugs being tested in clinical trials.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works -->
+    <section class="how-it-works">
+        <div class="container">
+            <h2 class="section-title">How It Works</h2>
+            <p class="section-subtitle">Four simple steps to find relevant clinical trials</p>
+            
+            <div class="steps">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <h3>Ask Claude</h3>
+                    <p>Simply tell Claude what type of clinical trial you're looking for</p>
+                </div>
+
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <h3>Provide Details</h3>
+                    <p>Claude asks for specifics: condition type, location, and age</p>
+                </div>
+
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <h3>Get Results</h3>
+                    <p>Receive a curated list of currently recruiting trials with key information</p>
+                </div>
+
+                <div class="step">
+                    <div class="step-number">4</div>
+                    <h3>Explore Details</h3>
+                    <p>Ask for complete information on any trial that interests you</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Installation -->
+    <section id="installation" class="installation">
+        <div class="container">
+            <h2 class="section-title">Installation</h2>
+            <p class="section-subtitle">Set up in minutes with Claude Desktop</p>
+            
+            <h3 style="margin-top: 40px; color: #1e3a8a;">1. Clone the Repository</h3>
+            <div class="code-block">git clone https://github.com/aaparrish/clinical-trials-mcp-server.git
+cd clinical-trials-mcp-server</div>
+
+            <h3 style="margin-top: 30px; color: #1e3a8a;">2. Install Dependencies</h3>
+            <div class="code-block">pip install mcp httpx</div>
+
+            <h3 style="margin-top: 30px; color: #1e3a8a;">3. Configure Claude Desktop</h3>
+            <p style="margin: 20px 0;">Add to your <code style="background: #e2e8f0; padding: 2px 8px; border-radius: 4px;">claude_desktop_config.json</code>:</p>
+            <div class="code-block">{
+  "mcpServers": {
+    "clinical-trials": {
+      "command": "python3",
+      "args": ["/path/to/clinical-trials-mcp-server/clinical_trials_mcp_server.py"]
+    }
+  }
+}</div>
+
+            <h3 style="margin-top: 30px; color: #1e3a8a;">4. Restart Claude Desktop</h3>
+            <p style="margin: 20px 0;">Quit and reopen Claude Desktop. You're ready to search clinical trials!</p>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <p>Built by <a href="https://github.com/aaparrish" target="_blank">Aidan Parrish</a></p>
+            <p style="margin-top: 10px; opacity: 0.8;">
+                <a href="https://github.com/aaparrish/clinical-trials-mcp-server" target="_blank">GitHub Repository</a> | 
+                <a href="https://clinicaltrials.gov" target="_blank">ClinicalTrials.gov</a> | 
+                <a href="https://modelcontextprotocol.io" target="_blank">Model Context Protocol</a>
+            </p>
+            <p style="margin-top: 20px; font-size: 0.9rem; opacity: 0.7;">
+                Data provided by ClinicalTrials.gov API v2
+            </p>
+        </div>
+    </footer>
+</body>
+</html>
