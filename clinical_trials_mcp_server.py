@@ -21,6 +21,7 @@ from mcp.types import (
     TextContent,
     ImageContent,
     EmbeddedResource,
+    Resource,
 )
 
 # Configure logging
@@ -33,6 +34,193 @@ server = Server("clinical-trials")
 # Constants
 CTGOV_BASE_URL = "https://clinicaltrials.gov/api/v2/studies"
 MAX_RESULTS_PER_REQUEST = 100
+
+# ============================================================================
+# RESOURCES - Context for AI to improve conversational flow
+# ============================================================================
+
+@server.list_resources()
+async def list_resources() -> List[Resource]:
+    """
+    Provide context resources that help Claude engage in better conversations
+    about clinical trials by prompting for clarifications and follow-ups.
+    """
+    return [
+        Resource(
+            uri="context://conversational-prompting-strategy",
+            name="Conversational Prompting Strategy for Clinical Trials",
+            description="Guidelines for engaging users in natural, helpful conversations about clinical trials",
+            mimeType="text/plain",
+        ),
+        Resource(
+            uri="context://api-limitations",
+            name="API Capabilities and Limitations",
+            description="What the ClinicalTrials.gov API can and cannot do",
+            mimeType="text/plain",
+        ),
+    ]
+
+
+@server.read_resource()
+async def read_resource(uri: str) -> str:
+    """Return the content of context resources."""
+    
+    if uri == "context://conversational-prompting-strategy":
+        return """
+# CRITICAL RULE FOR CLINICAL TRIAL SEARCHES
+
+## STOP AND READ THIS BEFORE EVERY SEARCH
+
+You MUST ask clarifying questions BEFORE calling the search tool when information is vague or missing.
+
+## THE THREE-QUESTION RULE (MANDATORY)
+
+Before calling search_clinical_trials, the user must provide:
+
+1. **SPECIFIC condition** 
+   - ❌ BAD: "cancer" or "diabetes"  
+   - ✅ GOOD: "breast cancer" or "type 2 diabetes"
+   - If they say general term → ASK for specific type
+
+2. **Location**
+   - City, state, country, OR "search nationally"
+   - If missing → ASK for location
+
+3. **Age**
+   - Specific age, range, or life stage
+   - If missing → ASK for age
+
+## CRITICAL EXAMPLES - MEMORIZE THESE
+
+### Example 1: General Condition (MOST COMMON MISTAKE)
+❌ **WRONG:**
+User: "find diabetes trials"
+You: [searches immediately]
+
+✅ **CORRECT:**
+User: "find diabetes trials"
+You: "I can help you search for diabetes trials. To find the most relevant options, I need a bit more info:
+- What type of diabetes? (Type 1, Type 2, gestational, or another type?)
+- What location should I search? (city, state, or nationwide?)
+- What's the age of the potential participant?
+
+Or if you'd like, I can start with a broad search and we can narrow it down."
+
+### Example 2: General "Cancer"
+❌ **WRONG:**
+User: "cancer trials"
+You: [searches immediately]
+
+✅ **CORRECT:**
+User: "cancer trials"  
+You: "I can search for cancer trials. To find the most relevant studies:
+- What type of cancer? (breast, lung, colon, prostate, etc.?)
+- What location works best?
+- What's the patient's age?
+
+I can also do a broad search if you prefer, then narrow down from there."
+
+### Example 3: Specific Condition But Missing Location/Age
+User: "lung cancer trials"
+You: "I'll search for lung cancer trials. To find eligible options:
+- What location should I focus on? (or I can search nationally)
+- What's the patient's age?
+
+Or would you like me to show you what's available broadly first?"
+
+### Example 4: Has Everything (Search Immediately!)
+User: "breast cancer trials in Phoenix for a 58 year old"
+You: [SEARCH IMMEDIATELY - no questions needed]
+[Then after results, offer to refine by phase, treatment type, etc.]
+
+## IF USER RESISTS GIVING DETAILS
+
+If user says "just search" or "show me everything":
+You: "I'll do a broad national search for [condition]. Keep in mind that many trials have specific location and age requirements, so we may need to filter results afterward."
+[Then search and immediately offer to narrow by location/age/specifics]
+
+## AFTER SHOWING RESULTS
+
+Always offer refinements:
+- "Would you like me to narrow by trial phase, specific treatments being tested, or location?"
+- "Want details on any particular trial?"
+- "Should I explain what these different phases mean?"
+
+## GENERAL vs SPECIFIC CONDITIONS
+
+**General terms that need clarification:**
+- "cancer" → ask for type (breast, lung, colorectal, etc.)
+- "diabetes" → ask for type (Type 1, Type 2, gestational)
+- "heart disease" → ask for specific (heart failure, coronary artery disease, arrhythmia)
+- "arthritis" → ask for type (rheumatoid, osteoarthritis)
+- "lung disease" → ask for type (COPD, asthma, pulmonary fibrosis)
+
+**Specific enough to search:**
+- "breast cancer", "type 2 diabetes", "COPD", "rheumatoid arthritis"
+- But still ask for location and age if missing!
+
+## YOUR DECISION TREE
+
+For EVERY trial search request:
+```
+1. Is condition SPECIFIC? (not just "cancer" or "diabetes")
+   NO → ASK for specific type
+   YES → Continue to #2
+
+2. Did user provide LOCATION?
+   NO → ASK for location (or offer broad search)
+   YES → Continue to #3
+
+3. Did user provide AGE?
+   NO → ASK for age (or offer to search without)
+   YES → SEARCH NOW!
+```
+
+## WHY THIS MATTERS
+
+Trials have strict requirements. Without this info:
+- Location: Can't find convenient options
+- Age: 50% of trials have age restrictions
+- Specific condition: "Cancer" returns 1000+ trials, "triple-negative breast cancer" returns 10 relevant ones
+
+Your goal: Help them find ELIGIBLE, RELEVANT trials - not just any trials.
+
+## REMEMBER
+
+- General condition (cancer, diabetes) = ASK for specifics
+- Missing location = ASK for location  
+- Missing age = ASK for age
+- Has all three specific pieces = SEARCH IMMEDIATELY
+
+Follow this rule on EVERY SINGLE search request. No exceptions.
+"""
+    elif uri == "context://api-limitations":
+        return """
+# ClinicalTrials.gov API Capabilities and Limitations
+
+## What the API CAN Do
+
+✅ Search by condition name (fuzzy matching works)
+✅ Filter by location (city, state, country)
+✅ Filter by recruitment status
+✅ Filter by intervention/treatment name
+✅ Get detailed trial information by NCT ID
+✅ Search returns up to 1000 results per query
+✅ Data is updated regularly from trial sponsors
+
+## What the API CANNOT Do
+
+❌ **No distance-based sorting** - Can't sort "trials nearest to you"
+❌ **No phase filtering in API** - This server filters phases after fetching results
+❌ **No age filtering in API** - This server filters ages after fetching results
+❌ **No "recently updated" parameter** - Can only see last update date in results
+❌ **No sponsor filtering** - Must filter results manually by sponsor name
+❌ **No success rate data** - Trials don't publish interim results
+❌ **No patient outcome data** - Only study design and status
+"""
+    
+    else:
+        raise ValueError(f"Unknown resource: {uri}")
 
 
 def safe_get(d: dict, *keys) -> Any:
@@ -229,7 +417,7 @@ async def list_tools() -> List[Tool]:
     return [
         Tool(
             name="search_clinical_trials",
-            description="Search for clinical trials on ClinicalTrials.gov with advanced filtering options",
+            description="Search for clinical trials on ClinicalTrials.gov. IMPORTANT: Before calling this tool, ask user for: (1) SPECIFIC condition type (e.g., 'Type 2 diabetes' not just 'diabetes', 'breast cancer' not just 'cancer'), (2) location (already required parameter), and (3) age of participant. These details dramatically improve result relevance and eligibility matching.",
             inputSchema={
                 "type": "object",
                 "properties": {
@@ -277,7 +465,7 @@ async def list_tools() -> List[Tool]:
                         "default": None,
                     },
                 },
-                "required": ["condition"],
+                "required": ["condition", "location"],
             },
         ),
         Tool(
